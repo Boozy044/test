@@ -18,7 +18,7 @@ def get_full_name(message):
 async def get_answer(question):
     await database.connect()
 
-    query = f"SELECT t2.`corrective`, t2.`answer` FROM `questions` t1 LEFT JOIN `questions` t2 ON t1.`corrective` = t2.`corrective` WHERE t1.`question` = ( '{question}' ) LIMIT 1"
+    query = f"SELECT t2.answer FROM questions t2 WHERE t2.corrective = ( SELECT t1.corrective FROM questions t1 WHERE t1.question = '{question}' LIMIT 1 ) LIMIT 1;"
     result = await database.fetch_one(query=query)
 
     await database.disconnect()
@@ -26,10 +26,10 @@ async def get_answer(question):
     return result
 
 
-async def make_logs(id, full_name, question, corrective, answer):
+async def make_logs(id, full_name, question, answer):
     await database.connect()
 
-    query = f"INSERT INTO `logs`(`channel`, `user_id`, `full_name`, `question`, `corrective`, `answer`) VALUES ('Telegram', '{id}', '{full_name}', '{question}', '{corrective}', '{answer}')"
+    query = f"INSERT INTO `logs`(`channel`, `user_id`, `full_name`, `question`, `answer`) VALUES ('Telegram', '{id}', '{full_name}', '{question}', '{answer}')"
     await database.execute(query=query)
 
     await database.disconnect()
@@ -45,16 +45,16 @@ async def user_answer(message: Message):
 
     if answer:
         if message.text == "/start":
-            await message.answer(f"{answer[1]}")
+            await message.answer(f"{answer}")
         else:
-            await message.answer(f"{answer[1]}")
+            await message.answer(f"{answer}")
 
-        await make_logs(message.chat.id, full_name, message.text, answer[0], answer[1])
+        await make_logs(message.chat.id, full_name, message.text, answer)
 
     else:
         answer = await get_answer("NOT_FOUND")
-        await message.answer(f"{answer[1]}")
-        await make_logs(message.chat.id, full_name, message.text, answer[0], answer[1])
+        await message.answer(f"{answer}")
+        await make_logs(message.chat.id, full_name, message.text, answer)
 
 
 @dp.message_handler(content_types=[ContentType.VOICE])
@@ -62,8 +62,8 @@ async def voice_message_handler(message: Message):
     full_name = get_full_name(message)
 
     answer = await get_answer("VOICE")
-    await message.answer(f"{answer[1]}")
-    await make_logs(message.chat.id, full_name, message.text, answer[0], answer[1])
+    await message.answer(f"{answer}")
+    await make_logs(message.chat.id, full_name, message.text, answer)
 
 
 @dp.message_handler(content_types=[ContentType.PHOTO])
@@ -71,8 +71,8 @@ async def photo_message_handler(message: Message):
     full_name = get_full_name(message)
 
     answer = await get_answer("PHOTO")
-    await message.answer(f"{answer[1]}")
-    await make_logs(message.chat.id, full_name, message.text, answer[0], answer[1])
+    await message.answer(f"{answer}")
+    await make_logs(message.chat.id, full_name, message.text, answer)
 
 
 @dp.message_handler(content_types=[ContentType.VIDEO])
@@ -80,8 +80,8 @@ async def video_message_handler(message: Message):
     full_name = get_full_name(message)
 
     answer = await get_answer("VIDEO")
-    await message.answer(f"{answer[1]}")
-    await make_logs(message.chat.id, full_name, message.text, answer[0], answer[1])
+    await message.answer(f"{answer}")
+    await make_logs(message.chat.id, full_name, message.text, answer)
 
 
 @dp.message_handler(content_types=[ContentType.DOCUMENT])
@@ -89,8 +89,8 @@ async def document_message_handler(message: Message):
     full_name = get_full_name(message)
 
     answer = await get_answer("DOCUMENT")
-    await message.answer(f"{answer[1]}")
-    await make_logs(message.chat.id, full_name, message.text, answer[0], answer[1])
+    await message.answer(f"{answer}")
+    await make_logs(message.chat.id, full_name, message.text, answer)
 
 
 if __name__ == '__main__':
